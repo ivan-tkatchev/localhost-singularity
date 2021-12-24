@@ -10,10 +10,11 @@ parser = argparse.ArgumentParser(description='Run a shell with a network namespa
 parser.add_argument('--sh', help='Path to the shell.', default='/bin/bash')
 parser.add_argument('--ip', help='Path to the `ip` command.', default='/sbin/ip')
 parser.add_argument('--unshare', help='Path to the `unshare` command.', default='/usr/bin/unshare')
-parser.add_argument('--port', help='Port to proxy from in the inside namespace to the outside namespace.', type=int)
 parser.add_argument('--socat', help='Path to the `socat` command.', default='/usr/bin/socat')
 parser.add_argument('--flair', help='Descriptive flair for shell prompt.', default='localhost-singularity')
+parser.add_argument('--port', help='Port to proxy from in the inside namespace to the outside namespace.', type=int)
 parser.add_argument('--setup', help='Run this command before entering the shell, and terminate it upon shell exit.')
+parser.add_argument('--verbose', help='Print debug diagnostics.', action='store_true')
 parser.add_argument('args', help='Arguments passed to shell.', nargs='*')
 
 args = parser.parse_args()
@@ -38,7 +39,8 @@ if os.getenv('LOCALHOST_SINGULARITY_PHASE2'):
     unshare = subprocess.run([ args.unshare, '--map-user', uid, '--map-group', gid, myself ] + myargs,
                              env={'LOCALHOST_SINGULARITY_TMPDIR': tmp,
                                   'LOCALHOST_SINGULARITY_PHASE3': '1'})
-    print(unshare)
+    if args.verbose:
+        print(unshare)
 
     if socat:
         socat.terminate()
@@ -57,7 +59,9 @@ export PS1="\[\033[01m\]{args.flair}:\[\033[00m\]\$ "
         setup = subprocess.Popen([ args.setup ])
 
     shell = subprocess.run([ args.sh, '--rcfile', shell_rc, '-i' ] + args.args)
-    print(shell)
+
+    if args.verbose:
+        print(shell)
 
     if setup:
         setup.terminate()
@@ -83,6 +87,8 @@ with tempfile.TemporaryDirectory() as tmp:
                                   'LOCALHOST_SINGULARITY_GID': str(gid),
                                   'LOCALHOST_SINGULARITY_TMPDIR': tmp,
                                   'LOCALHOST_SINGULARITY_PHASE2': '1'})
-    print(unshare)
+    if args.verbose:
+        print(unshare)
+
     if socat:
         socat.terminate()
