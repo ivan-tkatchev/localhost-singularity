@@ -24,6 +24,8 @@ myargs = [ x.decode() for x
            in open('/proc/self/cmdline', 'rb').read().split(b'\0')[1:]
            if len(x) > 0]
 
+PATH = os.getenv('PATH')
+
 if os.getenv('LOCALHOST_SINGULARITY_PHASE2'):
     uid = os.getenv('LOCALHOST_SINGULARITY_UID')
     gid = os.getenv('LOCALHOST_SINGULARITY_GID')
@@ -38,7 +40,8 @@ if os.getenv('LOCALHOST_SINGULARITY_PHASE2'):
 
     unshare = subprocess.run([ args.unshare, '--map-user', uid, '--map-group', gid, myself ] + myargs,
                              env={'LOCALHOST_SINGULARITY_TMPDIR': tmp,
-                                  'LOCALHOST_SINGULARITY_PHASE3': '1'})
+                                  'LOCALHOST_SINGULARITY_PHASE3': '1',
+                                  'PATH': PATH})
     if args.verbose:
         print(unshare)
 
@@ -58,7 +61,8 @@ export PS1="\[\033[01m\]{args.flair}:\[\033[00m\]\$ "
     if args.setup:
         setup = subprocess.Popen([ args.setup ])
 
-    shell = subprocess.run([ args.sh, '--rcfile', shell_rc, '-i' ] + args.args)
+    shell = subprocess.run([ args.sh, '--rcfile', shell_rc, '-i' ] + args.args,
+                           env={'PATH': PATH})
 
     if args.verbose:
         print(shell)
@@ -86,7 +90,8 @@ with tempfile.TemporaryDirectory() as tmp:
                              env={'LOCALHOST_SINGULARITY_UID': str(uid),
                                   'LOCALHOST_SINGULARITY_GID': str(gid),
                                   'LOCALHOST_SINGULARITY_TMPDIR': tmp,
-                                  'LOCALHOST_SINGULARITY_PHASE2': '1'})
+                                  'LOCALHOST_SINGULARITY_PHASE2': '1',
+                                  'PATH': PATH})
     if args.verbose:
         print(unshare)
 
