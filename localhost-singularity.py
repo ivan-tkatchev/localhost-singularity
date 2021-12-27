@@ -14,6 +14,7 @@ parser.add_argument('--socat', help='Path to the `socat` command.', default='/us
 parser.add_argument('--flair', help='Descriptive flair for shell prompt.', default='localhost-singularity')
 parser.add_argument('--port', help='Port to proxy from in the inside namespace to the outside namespace.', type=int)
 parser.add_argument('--setup', help='Run this command before entering the shell, and terminate it upon shell exit.')
+parser.add_argument('--env', help='Pass through this environment variable. (Can be specified more than once.)', default=[], action='append')
 parser.add_argument('--verbose', help='Print debug diagnostics.', action='store_true')
 parser.add_argument('args', help='Arguments passed to shell.', nargs='*')
 
@@ -25,6 +26,8 @@ myargs = [ x.decode() for x
            if len(x) > 0]
 
 PATH = os.getenv('PATH')
+
+ENV = { env: os.getenv(env) for env in args.env }
 
 if os.getenv('LOCALHOST_SINGULARITY_PHASE2'):
     uid = os.getenv('LOCALHOST_SINGULARITY_UID')
@@ -39,7 +42,8 @@ if os.getenv('LOCALHOST_SINGULARITY_PHASE2'):
     os.system(f'{args.ip} link set lo up')
 
     unshare = subprocess.run([ args.unshare, '--map-user', uid, '--map-group', gid, myself ] + myargs,
-                             env={'LOCALHOST_SINGULARITY_TMPDIR': tmp,
+                             env={**ENV,
+                                  'LOCALHOST_SINGULARITY_TMPDIR': tmp,
                                   'LOCALHOST_SINGULARITY_PHASE3': '1',
                                   'PATH': PATH})
     if args.verbose:
@@ -62,7 +66,8 @@ export PS1="\[\033[01m\]{args.flair}:\[\033[00m\]\$ "
         setup = subprocess.Popen([ args.setup ])
 
     shell = subprocess.run([ args.sh, '--rcfile', shell_rc, '-i' ] + args.args,
-                           env={'PATH': PATH})
+                           env={**ENV,
+                                'PATH': PATH})
 
     if args.verbose:
         print(shell)
@@ -87,7 +92,8 @@ with tempfile.TemporaryDirectory() as tmp:
         print('Proxy listening on port', free_port)
 
     unshare = subprocess.run([ args.unshare, '--map-root-user', '--net', myself ] + myargs,
-                             env={'LOCALHOST_SINGULARITY_UID': str(uid),
+                             env={**ENV,
+                                  'LOCALHOST_SINGULARITY_UID': str(uid),
                                   'LOCALHOST_SINGULARITY_GID': str(gid),
                                   'LOCALHOST_SINGULARITY_TMPDIR': tmp,
                                   'LOCALHOST_SINGULARITY_PHASE2': '1',
