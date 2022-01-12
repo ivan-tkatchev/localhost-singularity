@@ -27,7 +27,7 @@ myargs = [ x.decode() for x
 
 PATH = os.getenv('PATH')
 
-ENV = { env: os.getenv(env) for env in args.env }
+ENV = { env: os.getenv(env) or '' for env in args.env }
 
 if os.getenv('LOCALHOST_SINGULARITY_PHASE2'):
     uid = os.getenv('LOCALHOST_SINGULARITY_UID')
@@ -74,7 +74,8 @@ export PS1="\[\033[01m\]{args.flair}:\[\033[00m\]\$ "
 
     if setup:
         setup.terminate()
-    sys.exit()
+        setup.wait()
+    sys.exit(shell.returncode)
 
 uid = os.getuid()
 gid = os.getgid()
